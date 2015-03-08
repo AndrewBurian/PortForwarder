@@ -1,0 +1,35 @@
+# Pseudo code
+
+read packet
+
+# see if this packet is coming from a target
+
+if (src_host,src_port is target_host,target_b_port)
+  if (dest_port exists assigned to this target)
+    set src_port to target_a_port
+    set src_host to this_host
+    forward to dest_host,dest_port
+
+
+
+# see if this packet is headed towards a target
+
+else if (dest_host,dest_port is target_host,target_a_port)
+  if (src_host,src_port is host)
+    set dest_port to target_b_port
+    set src_host to this_host
+    forward to dest_host,dest_port
+  else (is forwarded but not yet a host)
+    if (is SYN)
+      add src as host
+      assign to target
+      set dest_port to target_b_port
+      set src_host to this_host
+      forward to dest_host,dest_port
+
+else
+  ignore
+  go to read
+
+if (packet is reset)
+  remove host
