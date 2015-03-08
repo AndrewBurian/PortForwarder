@@ -1,4 +1,28 @@
-#include <confread.h>
+/* ----------------------------------------------------------------------------
+SOURCE FILE
+
+Name:		main.c
+
+Program:	Port Forwarder
+
+Developer:	Andrew Burian
+            Jordan Marling
+
+Created On:	2015-03-08
+
+Functions:
+	int main(int argc, char** argv)
+
+Description:
+  The main portion of the port forwarding program
+
+  * needs libconfread (github.com/andrewburian/configreader)
+
+Revisions:
+	(none)
+
+---------------------------------------------------------------------------- */
+
 #include "portforward.h"
 
 
@@ -8,7 +32,35 @@ size_t targetCount = 0;
 
 // known hosts
 struct pf_host* hosts = 0;
+size_t hostCount = 0;
 
+
+/* ----------------------------------------------------------------------------
+FUNCTION
+
+Name:		Main
+
+Prototype:	int main(int argc, char** argv)
+
+Developer:	Andrew Burian
+
+Created On:	2015-03-08
+
+Parameters:
+	Command line args
+
+Return Values:
+	0  success
+  -1 error conditions
+
+Description:
+	Sets up the port forwarder. Reads the config file and sets up the targets list
+  for forwarding.
+
+Revisions:
+	(none)
+
+---------------------------------------------------------------------------- */
 int main(int argc, char** argv){
 
   // the config file
@@ -31,12 +83,12 @@ int main(int argc, char** argv){
     return -1;
   }
 
-  // allocate as many targets as there are sections
+  // allocate as many targets as there are sections (-1 to skip root section)
   targets = (struct pf_target*)malloc(sizeof(struct pf_target) * confFile->count - 1);
   targetCount = confFile->count - 1;
 
   // setup the targets
-  j = 1;
+  j = 1; // to skip root
   for(i = 0; i < targetCount; ++i, ++j){
     sec = confFile->sections[j];
 
@@ -45,7 +97,7 @@ int main(int argc, char** argv){
       || !confread_find_value(sec, "tohost")){
 
       // error
-      fprintf(stderr, "Forward section %s malformed. Ignored.\n", sec->name);
+      fprintf(stderr, "Forward section %s malformed: missing field.\nIgnored.\n", sec->name);
       // shrink the number of targets needed
       targets = realloc(targets, sizeof(struct pf_target) * --targetCount);
       // don't advance i
@@ -58,7 +110,7 @@ int main(int argc, char** argv){
       !sscanf(confread_find_value(sec, "toport"), "%hu", &bPort)){
 
       // error
-      fprintf(stderr, "Forward section %s malformed. Ignored.\n", sec->name);
+      fprintf(stderr, "Forward section %s malformed: port NaN\nIgnored\n", sec->name);
       // shrink the number of targets needed
       targets = realloc(targets, sizeof(struct pf_target) * --targetCount);
       // don't advance i
@@ -69,7 +121,7 @@ int main(int argc, char** argv){
     // assign the host
     if((targets[i].host = inet_addr(confread_find_value(sec, "tohost"))) == INADDR_NONE){
       // error
-      fprintf(stderr, "Forward section %s malformed. Ignored.\n", sec->name);
+      fprintf(stderr, "Forward section %s malformed: invalid host.\nIgnored.\n", sec->name);
       // shrink the number of targets needed
       targets = realloc(targets, sizeof(struct pf_target) * --targetCount);
       // don't advance i
@@ -86,6 +138,12 @@ int main(int argc, char** argv){
 
   // close the config
   confread_close(&confFile);
+
+  // TODO: run
+
+  // cleanup
+  free(targets);
+  free(hosts);
 
   return 0;
 
