@@ -39,6 +39,7 @@ void forward();
 struct pf_target *find_source_target(unsigned int host, unsigned int port);
 struct pf_target *find_dest_target(unsigned int host, unsigned int port);
 struct pf_host *find_host(unsigned int host, unsigned int port);
+unsigned short csum(unsigned short *buf, int nwords);
 
 
 /* ----------------------------------------------------------------------------
@@ -64,8 +65,14 @@ Description:
   for forwarding.
 
 Revisions:
-  Jordan Marling 2015-03-13
-    Added the Listen function call
+
+  Jordan Marling
+  2015-03-13
+  Added the Listen function call
+
+  Andrew Burian
+  2015-03-15
+  Added Checksum calculations for TCP at every sendto call
 
 ---------------------------------------------------------------------------- */
 int main(int argc, char** argv){
@@ -244,6 +251,10 @@ void forward() {
       // ip_header->daddr = DST_ADDR
       tcp_header->source = target->port.a_port;
 
+      // redo the checksum
+      tcp_header->check = 0;
+      tcp_header->check = csum((unsigned short*)tcp_header, ip_header->tot_len - (ip_header->ihl * 4));
+
       // forward
       sendto(socket_descriptor, buffer, datagram_length, 0, 0, 0);
 
@@ -261,6 +272,10 @@ void forward() {
         // set header information
         tcp_header->dest = host->target->port.b_port;
         // ip_header->saddr = MY ADDRESS
+
+        // redo the checksum
+        tcp_header->check = 0;
+        tcp_header->check = csum((unsigned short*)tcp_header, ip_header->tot_len - (ip_header->ihl * 4));
 
         //forward
         sendto(socket_descriptor, buffer, datagram_length, 0, 0, 0);
@@ -314,10 +329,7 @@ void forward() {
           // set the checksums
           ip_header->check = 0;
           tcp_header->check = 0;
-
-          // tcp_header->check = checksum((char*)tcp_header, ip_header->tot_len - (ip_header->ihl * 4));
-          // tcp_header->check = checksum((char*)tcp_header, ip_header->tot_len);
-          // ip_header->check = checksum((char*)ip_header, ip_header->tot_len);
+          tcp_header->check = csum((unsigned short*)tcp_header, ip_header->tot_len - (ip_header->ihl * 4));
 
           printf("Sending to port %u\n", ntohs(tcp_header->dest));
 
@@ -453,4 +465,47 @@ struct pf_host *find_host(unsigned int host, unsigned int port) {
 
   // return a null pointer if a host isn't found
   return 0;
+}
+
+/* ----------------------------------------------------------------------------
+FUNCTION
+
+Name:		Checksum
+
+Prototype:  unsigned short csum(unsigned short *buf, int nwords)
+
+Developer:	Andrew Burian
+
+Created On:	2015-03-15
+
+Parameters:
+  unsigned short *buf
+    the start of the data to checksum
+  int nwords
+    the number of words to include in the sum
+
+Return Values:
+  The checksum of the data block
+
+Description:
+  Taken from an implementation of RFC 1071, computes a standard internet
+  checksum
+
+Revisions:
+  (none)
+
+---------------------------------------------------------------------------- */
+unsigned short csum(unsigned short *buf, int nwords){
+
+  unsigned long sum;
+
+  for(sum=0; nwords>0; nwords--){
+    sum += *buf++;
+  }
+
+  sum = (sum >> 16) + (sum &0xffff);
+  sum += (sum >> 16);
+
+  return (unsigned short)(~sum);
+
 }
