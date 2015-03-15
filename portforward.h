@@ -11,7 +11,7 @@ Created On:	2015-03-08
 
 Description:
 	All the structs and functions needed for the port forwarding program
-  
+
   * needs libconfread (github.com/andrewburian/configreader)
 
 Revisions:
@@ -22,11 +22,15 @@ Revisions:
 #ifndef PORTFORWARD_H
 #define PORTFORWARD_H
 
-#define DEFAULT_CONFIG "forwards.conf"
+#define DEFAULT_CONFIG  "forwards.conf"
+#define IP_DATA_LEN     65536
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <confread.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
+#include <netinet/udp.h>
 
 struct pf_port{
   unsigned short int a_port;
