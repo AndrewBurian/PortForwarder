@@ -6,6 +6,7 @@ Name:		portforward.h
 Program:	Port Forwarder
 
 Developer:	Andrew Burian
+            Jordan Marling
 
 Created On:	2015-03-08
 

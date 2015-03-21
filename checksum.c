@@ -1,3 +1,27 @@
+/* ----------------------------------------------------------------------------
+SOURCE FILE
+
+Name:		checksum.c
+
+Program:	Port Forwarder
+
+Developer:	Andrew Burian
+            Jordan Marling
+
+Created On:	2015-03-15
+
+Functions:
+  unsigned short tcp_csum(unsigned short *packet)
+  unsigned short csum(unsigned short *buf, int nwords)
+
+Description:
+  Contains all checksum functions used in the application.
+
+Revisions:
+	(none)
+
+---------------------------------------------------------------------------- */
+
 #include "portforward.h"
 
 /* ----------------------------------------------------------------------------
