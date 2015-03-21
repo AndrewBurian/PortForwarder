@@ -26,6 +26,8 @@ Parameters:
     the array of targets
   size_t m_targetCount
     the number of targets in the array
+  unsigned int ip
+    the local ip address of the port forwarder machine
 
 Return Values:
   None
@@ -40,7 +42,7 @@ Revisions:
   Added args so that it could be moved out of main.c
 
 ---------------------------------------------------------------------------- */
-void forward(struct pf_target* m_targets, size_t m_targetCount) {
+void forward(struct pf_target* m_targets, size_t m_targetCount, unsigned int ip) {
 
   // socket descriptors
   int socket_descriptor;
@@ -115,9 +117,13 @@ void forward(struct pf_target* m_targets, size_t m_targetCount) {
       dst_addr.sin_addr.s_addr = host->host;
       dst_addr.sin_port = target->port.a_port;
 
-      // ip_header->saddr = MY ADDRESS HOW DO I GET THIS?
+      // set the source ip to be this forwarder
+      ip_header->saddr = ip;
+
+      // set the target to be the original host
       ip_header->daddr = host->host;
-      // tcp_header->dest = target->port.a_port;
+
+      // set the source port to be the forwarded port
       tcp_header->source = target->port.a_port;
 
       // redo the checksum
@@ -143,7 +149,7 @@ void forward(struct pf_target* m_targets, size_t m_targetCount) {
         printf("host is known\n");
         // set header information
         tcp_header->dest = host->target->port.b_port;
-        // ip_header->saddr = MY ADDRESS
+        ip_header->saddr = ip;
 
         // redo the checksum
         tcp_header->check = 0;
@@ -189,7 +195,7 @@ void forward(struct pf_target* m_targets, size_t m_targetCount) {
 
           // set header information
           tcp_header->dest = target->port.b_port;
-          ip_header->saddr = ip_header->daddr;
+          ip_header->saddr = ip;
           ip_header->daddr = target->host;
 
           dst_addr.sin_family = AF_INET;
@@ -199,7 +205,6 @@ void forward(struct pf_target* m_targets, size_t m_targetCount) {
           // set the checksums
           ip_header->check = 0;
           tcp_header->check = 0;
-          // tcp_header->check = tcp_csum(ip_header);
           tcp_header->check = tcp_csum(ip_header, tcp_header);
 
           //forward

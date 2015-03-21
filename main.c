@@ -78,10 +78,24 @@ int main(int argc, char** argv){
   struct pf_target* targets = 0;
   size_t targetCount = 0;
 
+  // our ip to replace in forwarded packets
+  unsigned int myIp = 0;
+  struct confread_pair* ip = 0;
+
   // open the config
   confFileName = (argc > 1 ? argv[1] : DEFAULT_CONFIG);
   if(!(confFile = confread_open(confFileName))){
     fprintf(stderr, "Failed to open conf file: %s\n", confFileName);
+    return -1;
+  }
+
+  // read our IP from the conf
+  if(!(ip = confread_find_pair(confFile->sections[0], "addr"))){
+    fprintf(stderr, "Local address required in %s\n", confFileName);
+    return -1;
+  }
+  if((myIp = inet_addr(ip->value)) == INADDR_NONE){
+    fprintf(stderr, "Invalid local address\n");
     return -1;
   }
 
@@ -141,7 +155,8 @@ int main(int argc, char** argv){
   // close the config
   confread_close(&confFile);
 
-  forward(targets, targetCount);
+  // run the forwarder
+  forward(targets, targetCount, myIp);
 
   // cleanup
   free(targets);

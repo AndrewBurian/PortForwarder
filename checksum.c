@@ -23,9 +23,10 @@ Description:
   a standard checksum could they?
 
 Revisions:
-  2015-03-20 Jordan Marling
-    Fixed the algorithm. The TCP header wasn't being copied fully because it
-    was in network by order. also it now takes into account tcp header options.
+  2015-03-20
+  Jordan Marling
+  Fixed the algorithm. The TCP header wasn't being copied fully because it
+  was in network byte order. also it now takes into account tcp header options.
 
 ---------------------------------------------------------------------------- */
 unsigned short tcp_csum(struct iphdr *ip_header, struct tcphdr *tcp_header){
@@ -91,8 +92,9 @@ Description:
    checksum
 
 Revisions:
-  2015-03-20 Jordan Marling
-    Fixed the algorithm.
+  2015-03-20
+  Jordan Marling
+  Changed from words to bytes
 
 ---------------------------------------------------------------------------- */
 unsigned short csum(unsigned short *buf, int nwords){

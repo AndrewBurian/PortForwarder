@@ -59,7 +59,7 @@ struct pf_host{
 };
 
 //function prototypes
-void forward(struct pf_target* m_targets, size_t m_targetCount);
+void forward(struct pf_target* m_targets, size_t m_targetCount, unsigned int ip);
 struct pf_target *find_source_target(unsigned int host, unsigned int port);
 struct pf_target *find_dest_target(unsigned int host, unsigned int port);
 struct pf_host *find_host_by_target(unsigned int target_host, unsigned int port);
