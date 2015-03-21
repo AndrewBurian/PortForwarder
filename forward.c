@@ -103,16 +103,32 @@ void forward(struct pf_target* m_targets, size_t m_targetCount) {
     if (target != 0) {
       printf("source target!\n");
       // set header information
-      // ip_header->saddr = MY ADDRESS
-      // ip_header->daddr = DST_ADDR
+
+      host = find_host_by_target(ip_header->saddr, tcp_header->dest);
+      if (host == 0) {
+        printf("Could not find host.\n");
+        continue;
+      }
+
+      // destination address
+      dst_addr.sin_family = AF_INET;
+      dst_addr.sin_addr.s_addr = host->host;
+      dst_addr.sin_port = target->port.a_port;
+
+      // ip_header->saddr = MY ADDRESS HOW DO I GET THIS?
+      ip_header->daddr = host->host;
+      // tcp_header->dest = target->port.a_port;
       tcp_header->source = target->port.a_port;
 
       // redo the checksum
       tcp_header->check = 0;
-      tcp_header->check = tcp_csum((unsigned short*)tcp_header);
+      tcp_header->check = tcp_csum(ip_header, tcp_header);
 
       // forward
-      sendto(socket_descriptor, buffer, datagram_length, 0, 0, 0);
+      if (sendto(socket_descriptor, buffer, datagram_length, 0, (struct sockaddr*)&dst_addr, sizeof(struct sockaddr)) == -1) {
+        printf("error sending...\n");
+      }
+      printf("Send1!\n");
 
       continue;
     }
@@ -131,10 +147,11 @@ void forward(struct pf_target* m_targets, size_t m_targetCount) {
 
         // redo the checksum
         tcp_header->check = 0;
-        tcp_header->check = tcp_csum((unsigned short*)tcp_header);
+        tcp_header->check = tcp_csum(ip_header, tcp_header);
 
         //forward
         sendto(socket_descriptor, buffer, datagram_length, 0, 0, 0);
+        printf("Send2!\n");
 
         // check to see if the packet was a reset packet
         if (tcp_header->rst == 1) {
@@ -160,10 +177,8 @@ void forward(struct pf_target* m_targets, size_t m_targetCount) {
         continue;
       }
       else { // we do not have this host stored.
-        printf("Not in list.\n");
         // check if the packet is a SYN
         if (tcp_header->syn == 1) {
-          printf("Add to list\n");
           // add host to list
           hostCount++;
           hosts = (struct pf_host*)realloc(hosts, sizeof(struct pf_host) * hostCount);
@@ -181,17 +196,14 @@ void forward(struct pf_target* m_targets, size_t m_targetCount) {
           dst_addr.sin_addr.s_addr = target->host;
           dst_addr.sin_port = target->port.b_port;
 
-
           // set the checksums
           ip_header->check = 0;
           tcp_header->check = 0;
-          tcp_header->check = tcp_csum((unsigned short*)tcp_header);
-
-          printf("Sending to port %u\n", ntohs(tcp_header->dest));
+          // tcp_header->check = tcp_csum(ip_header);
+          tcp_header->check = tcp_csum(ip_header, tcp_header);
 
           //forward
           sendto(socket_descriptor, (char*)ip_header, datagram_length, 0, (struct sockaddr*)&dst_addr, sizeof(struct sockaddr));
-          printf("Send!\n");
           continue;
         }
       }
@@ -317,6 +329,20 @@ struct pf_host *find_host(unsigned int host, unsigned int port) {
   //return if we find a host match
   for (i = 0; i < hostCount; i++) {
     if (hosts[i].host == host && hosts[i].port == port) {
+      return &hosts[i];
+    }
+  }
+
+  // return a null pointer if a host isn't found
+  return 0;
+}
+
+struct pf_host *find_host_by_target(unsigned int target_host, unsigned int port) {
+  int i;
+
+  //return if we find a host match
+  for (i = 0; i < hostCount; i++) {
+    if (hosts[i].target->host == target_host && hosts[i].port == port) {
       return &hosts[i];
     }
   }

@@ -23,27 +23,47 @@ Description:
   a standard checksum could they?
 
 Revisions:
-  (none)
+  2015-03-20 Jordan Marling
+    Fixed the algorithm. The TCP header wasn't being copied fully because it
+    was in network by order. also it now takes into account tcp header options.
 
 ---------------------------------------------------------------------------- */
-unsigned short tcp_csum(unsigned short *packet){
+unsigned short tcp_csum(struct iphdr *ip_header, struct tcphdr *tcp_header){
 
-  // the headers needed
-  struct iphdr *ip_header = (struct iphdr*)packet;
+  unsigned short total_len = ntohs(ip_header->tot_len);
+  unsigned short checksum;
 
-  // the pseudo header to assemble
-  struct pseudoTcpHeader hdr = {0};
+  // tcp lengths
+  int tcpopt_len = (tcp_header->doff * 4) - 20;
+  int tcpdatalen = total_len - (tcp_header->doff*4) - (ip_header->ihl*4);
 
-  // amass the pseudo header
-  hdr.ip_src = ip_header->saddr;
-  hdr.ip_dst = ip_header->daddr;
-  hdr.protocol = ip_header->protocol;
-  hdr.tcp_len = ip_header->tot_len - (ip_header->ihl * 4);
-  hdr.tcph = *(struct tcphdr*)(ip_header + ip_header->tot_len - (ip_header->ihl * 4));
+  // pseudo header
+  struct pseudoTcpHeader pseudohead;
+  int totaltcp_len = sizeof(struct pseudoTcpHeader) + sizeof(struct tcphdr) + tcpopt_len + tcpdatalen;
+  unsigned short *psuedoheader_tcpsegment = (unsigned short*)malloc(totaltcp_len);
 
-  // checksum it
-  return csum((unsigned short*)&hdr, sizeof(hdr) / 2);
 
+  pseudohead.ip_src = ip_header->saddr;
+  pseudohead.ip_dst = ip_header->daddr;
+  pseudohead.zero = 0;
+  pseudohead.protocol = IPPROTO_TCP;
+  pseudohead.tcp_len = htons(sizeof(struct tcphdr) + tcpopt_len + tcpdatalen);
+
+
+  // put the pseudo header into memory
+  memcpy((unsigned char*)psuedoheader_tcpsegment, &pseudohead, sizeof(struct pseudoTcpHeader));
+  // put the tcp header into memory
+  memcpy((unsigned char*)psuedoheader_tcpsegment + sizeof(struct pseudoTcpHeader), (unsigned char*)tcp_header, sizeof(struct tcphdr));
+  // put the tcp options into memory
+  memcpy((unsigned char*)psuedoheader_tcpsegment + sizeof(struct pseudoTcpHeader) + sizeof(struct tcphdr), (unsigned char*)ip_header + (ip_header->ihl * 4) + sizeof(struct tcphdr), tcpopt_len);
+  // put the tcp data into memory
+  memcpy((unsigned char*)psuedoheader_tcpsegment + sizeof(struct pseudoTcpHeader) + sizeof(struct tcphdr) + tcpopt_len, (unsigned char*)tcp_header + (tcp_header->doff * 4), tcpdatalen);
+
+  checksum = csum(psuedoheader_tcpsegment, totaltcp_len);
+
+  free(psuedoheader_tcpsegment);
+
+  return checksum;
 }
 
 /* ----------------------------------------------------------------------------
@@ -71,19 +91,27 @@ Description:
    checksum
 
 Revisions:
-  (none)
+  2015-03-20 Jordan Marling
+    Fixed the algorithm.
 
 ---------------------------------------------------------------------------- */
 unsigned short csum(unsigned short *buf, int nwords){
 
   unsigned long sum;
 
-  for(sum=0; nwords>0; nwords--){
+
+  for(sum = 0; nwords > 1; nwords -= 2)  {
     sum += *buf++;
   }
 
-  sum = (sum >> 16) + (sum &0xffff);
-  sum += (sum >> 16);
+  // add the left-over byte
+  if(nwords > 0)
+    sum += *(unsigned char *)buf;
 
-  return (unsigned short)(~sum);
+  // turn the 32 bit words to 16 bit.
+  while (sum >> 16) {
+    sum = (sum & 0xffff) + (sum >> 16);
+  }
+
+  return (unsigned short)~sum;
 }

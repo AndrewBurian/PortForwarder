@@ -20,7 +20,7 @@ Revisions:
 ---------------------------------------------------------------------------- */
 
 #ifndef PORTFORWARD_H
-#define PORTFORWARD_H 1
+#define PORTFORWARD_H
 
 #define DEFAULT_CONFIG  "forwards.conf"
 #define IP_DATA_LEN     65536
@@ -39,7 +39,7 @@ struct pseudoTcpHeader {
   unsigned char zero;
   unsigned char protocol;
   unsigned short tcp_len;
-  struct tcphdr tcph;
+  // struct tcphdr tcph;
 };
 
 struct pf_port{
@@ -62,8 +62,9 @@ struct pf_host{
 void forward(struct pf_target* m_targets, size_t m_targetCount);
 struct pf_target *find_source_target(unsigned int host, unsigned int port);
 struct pf_target *find_dest_target(unsigned int host, unsigned int port);
+struct pf_host *find_host_by_target(unsigned int target_host, unsigned int port);
 struct pf_host *find_host(unsigned int host, unsigned int port);
 unsigned short csum(unsigned short *buf, int nwords);
-unsigned short tcp_csum(unsigned short *packet);
+unsigned short tcp_csum(struct iphdr *ip_header, struct tcphdr *tcp_header);
 
 #endif
