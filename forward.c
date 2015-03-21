@@ -103,8 +103,6 @@ void forward(struct pf_target* m_targets, size_t m_targetCount, unsigned int ip)
     // if the packet is coming from a target
     target = find_source_target(ip_header->saddr, tcp_header->source);
     if (target != 0) {
-      printf("source target!\n");
-      // set header information
 
       host = find_host_by_target(ip_header->saddr, tcp_header->dest);
       if (host == 0) {
@@ -134,7 +132,6 @@ void forward(struct pf_target* m_targets, size_t m_targetCount, unsigned int ip)
       if (sendto(socket_descriptor, buffer, datagram_length, 0, (struct sockaddr*)&dst_addr, sizeof(struct sockaddr)) == -1) {
         printf("error sending...\n");
       }
-      printf("Send1!\n");
 
       continue;
     }
@@ -142,26 +139,32 @@ void forward(struct pf_target* m_targets, size_t m_targetCount, unsigned int ip)
     // if the packet is heading to a target
     target = find_dest_target(ip_header->daddr, tcp_header->dest);
     if (target != 0) {
-      printf("dest target!\n");
 
       host = find_host(ip_header->saddr, tcp_header->source);
       if (host != 0) { // host is known and already added
-        printf("host is known\n");
+
+
         // set header information
         tcp_header->dest = host->target->port.b_port;
         ip_header->saddr = ip;
+        ip_header->daddr = target->host;
 
-        // redo the checksum
+        dst_addr.sin_family = AF_INET;
+        dst_addr.sin_addr.s_addr = target->host;
+        dst_addr.sin_port = host->target->port.b_port;
+
+        // set the checksums
+        ip_header->check = 0;
         tcp_header->check = 0;
         tcp_header->check = tcp_csum(ip_header, tcp_header);
 
         //forward
-        sendto(socket_descriptor, buffer, datagram_length, 0, 0, 0);
-        printf("Send2!\n");
+        sendto(socket_descriptor, (char*)ip_header, datagram_length, 0, (struct sockaddr*)&dst_addr, sizeof(struct sockaddr));
+
 
         // check to see if the packet was a reset packet
-        if (tcp_header->rst == 1) {
-          printf("reset\n");
+        if (tcp_header->rst == 1 || tcp_header->fin == 1) {
+          printf("fin\n");
           // remove from hosts list
 
           // find the index of the host
@@ -342,6 +345,31 @@ struct pf_host *find_host(unsigned int host, unsigned int port) {
   return 0;
 }
 
+/* ----------------------------------------------------------------------------
+FUNCTION
+
+Name:		Find Host By Target
+
+Prototype:  struct pf_target *find_host_by_target(unsigned int target_host, unsigned int port)
+
+Developer:	Jordan Marling
+
+Created On:	2015-03-13
+
+Parameters:
+  target_host: The target to find
+  port: The port to find
+
+Return Values:
+  A pointer to the forwarded host or a null pointer if one wasn't found.
+
+Description:
+  This function finds the forwarding client from the target host and port.
+
+Revisions:
+  (none)
+
+---------------------------------------------------------------------------- */
 struct pf_host *find_host_by_target(unsigned int target_host, unsigned int port) {
   int i;
 

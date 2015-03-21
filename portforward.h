@@ -25,12 +25,13 @@ Revisions:
 #define DEFAULT_CONFIG  "forwards.conf"
 #define IP_DATA_LEN     65536
 
-#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <confread.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
+#include <stdio.h>
+#include <sys/socket.h>
 
 // for TCP checksumming
 struct pseudoTcpHeader {
@@ -64,7 +65,11 @@ struct pf_target *find_source_target(unsigned int host, unsigned int port);
 struct pf_target *find_dest_target(unsigned int host, unsigned int port);
 struct pf_host *find_host_by_target(unsigned int target_host, unsigned int port);
 struct pf_host *find_host(unsigned int host, unsigned int port);
+
 unsigned short csum(unsigned short *buf, int nwords);
 unsigned short tcp_csum(struct iphdr *ip_header, struct tcphdr *tcp_header);
+
+void firewall_invoke_srcport(int port);
+void firewall_invoke_dstport(int port);
 
 #endif

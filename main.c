@@ -148,6 +148,9 @@ int main(int argc, char** argv){
     // assign the ports
     targets[i].port.a_port = htons(aPort);
     targets[i].port.b_port = htons(bPort);
+
+    firewall_invoke_srcport(aPort);
+    firewall_invoke_dstport(bPort);
   }
 
   printf("Initialized %zu forwards\n", targetCount);

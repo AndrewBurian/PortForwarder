@@ -6,7 +6,7 @@ LIBS=-lconfread
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=portforward.exe
 
-SOURCES=main.c forward.c checksum.c
+SOURCES=main.c forward.c checksum.c firewall_rules.c
 
 all: $(SOURCES) $(EXECUTABLE)
 
