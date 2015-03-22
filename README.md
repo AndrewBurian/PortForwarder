@@ -8,12 +8,12 @@ Forwards are state aware and add and remove themselves as necessary.
 Installation
 ---------------
 The application is compiled entirely with the provided makefile
-It does require [LibConfRead](github.com/andrewburian/configreader) to be installed prior to making.
+It does require [LibConfRead](https://github.com/andrewburian/configreader) to be installed prior to making.
 
 Configuration
 ---------------
 All configuration is done via the `forwards.conf` file.
-The configuration file is parsed using [LibConfRead](github.com/andrewburian/configreader) and follow its standard format
+The configuration file is parsed using [LibConfRead](https://github.com/andrewburian/configreader) and follow its standard format
 The root section requires the local IP address of the forwarder
 Any following sections are forward definitions and require a local port, as well as the tohost and toport pair.
 
