@@ -106,7 +106,6 @@ void forward(struct pf_target* m_targets, size_t m_targetCount, unsigned int ip)
 
       host = find_host_by_target(ip_header->saddr, tcp_header->dest);
       if (host == 0) {
-        printf("Could not find host.\n");
         continue;
       }
 
@@ -129,9 +128,7 @@ void forward(struct pf_target* m_targets, size_t m_targetCount, unsigned int ip)
       tcp_header->check = tcp_csum(ip_header, tcp_header);
 
       // forward
-      if (sendto(socket_descriptor, buffer, datagram_length, 0, (struct sockaddr*)&dst_addr, sizeof(struct sockaddr)) == -1) {
-        printf("error sending...\n");
-      }
+      sendto(socket_descriptor, buffer, datagram_length, 0, (struct sockaddr*)&dst_addr, sizeof(struct sockaddr));
 
       continue;
     }
@@ -164,7 +161,6 @@ void forward(struct pf_target* m_targets, size_t m_targetCount, unsigned int ip)
 
         // check to see if the packet was a reset packet
         if (tcp_header->rst == 1 || tcp_header->fin == 1) {
-          printf("fin\n");
           // remove from hosts list
 
           // find the index of the host
