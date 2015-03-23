@@ -1,3 +1,31 @@
+/* ----------------------------------------------------------------------------
+SOURCE FILE
+
+Name:		forward.c
+
+Program:	Port Forwarder
+
+Developer:	Jordan Marling
+            Andrew Burian
+
+Created On:	2015-03-15
+
+Functions:
+  void forward(struct pf_target* targets, size_t targetCount)
+  struct pf_target *find_source_target(unsigned int host, unsigned int port)
+  struct pf_target *find_dest_target(unsigned int host, unsigned int port)
+  struct pf_target *find_host(unsigned int host, unsigned int port)
+  struct pf_target *find_host_by_target(unsigned int target_host, unsigned int port)
+
+Description:
+  The core of the forwarding engine
+
+Revisions:
+  (none)
+
+---------------------------------------------------------------------------- */
+
+
 #include "portforward.h"
 
 // Globals
